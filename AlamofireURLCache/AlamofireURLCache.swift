@@ -82,9 +82,9 @@ extension Session {
                         headers: HTTPHeaders? = nil,
                         interceptor: RequestInterceptor? = nil,
                         requestModifier: RequestModifier? = nil,
-                        refreshCache:Bool = false) -> DataRequest {
+                        refreshCache:Bool = false, allowNonGet:Bool=false) -> DataRequest {
         var newHeaders = headers
-        if method == .get {
+        if allowNonGet || method == .get {
             if refreshCache {
                 if newHeaders == nil {
                     newHeaders = HTTPHeaders()
@@ -94,8 +94,7 @@ extension Session {
                 } else {
                     newHeaders?["Pragma"] = "no-cache"
                 }
-                newHeaders?[AlamofireURLCache.refreshCacheKey] = AlamofireURLCache.RefreshCacheValue.refreshCache.rawValue
-                
+                newHeaders?[AlamofireURLCache.refreshCacheKey] = AlamofireURLCache.RefreshCacheValue.refreshCache.rawValue       
             }
         }
         return request(convertible, method: method, parameters: parameters, encoding: encoding, headers: newHeaders, interceptor: interceptor, requestModifier: requestModifier)
@@ -106,7 +105,7 @@ extension DataRequest {
     
     // MARK: - Public method
     @discardableResult
-    public func cache(maxAge:Int,isPrivate:Bool = false,ignoreServer:Bool = true)
+    public func cache(maxAge:Int,isPrivate:Bool = false,ignoreServer:Bool = true,allowNonGet:Bool=false)
         -> Self
     {
         if maxAge <= 0 {
@@ -133,7 +132,7 @@ extension DataRequest {
         // add to response queue wait for invoke
         return response { (defaultResponse) in
             
-            if defaultResponse.request?.httpMethod != "GET" {
+            if defaultResponse.request?.httpMethod != "GET" && !allowNonGet {
                 debugPrint("Non-GET requests do not support caching!")
                 return
             }
